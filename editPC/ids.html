@@ -1,0 +1,126 @@
+<html>    
+  <head> 
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="../jquery/jquery-1.4.4.min.js"></script>        
+    <script src="http://maps.googleapis.com/maps/api/js?sensor=false" type="text/javascript"></script>
+    <script type="text/javascript" src="../gmap3.js"></script> 
+    <style>
+      body{
+        text-align:center;
+      }
+      #container{
+        overflow: auto;
+        margin: 20px auto;
+        width: 1200px;
+      }
+      .gmap3, #tool{
+        border: 1px dashed #C0C0C0;
+        width: 500px;
+        height: 500px;
+        float: left;
+      }
+      #tool{
+        margin-left: 10px;
+        padding: 5px;
+        text-align:left;
+      }
+      #data{
+        
+      }
+      .section{
+        margin: 10px;
+        padding: 10px;
+      }      
+    </style>
+    
+    <script type="text/javascript">
+      $(function(){
+        $('#map').gmap3({
+          map:{
+            options:{
+              center:[46.578498,2.457275],
+              zoom: 5
+            }
+          },
+          marker:{
+            values:[
+              {address:"75001, Paris, France", id:"Paris"},
+              {address:"86000 Poitiers, France"},
+              {address:"66000 Perpignan, France"}
+            ],
+            options:{
+              draggable: true
+            },
+            events: {
+              click: function(marker, event, context){
+                markerSelected(context.id);
+              }
+            }
+          }
+        });
+        
+        $("#bcolor").click(function(){
+          var marker = $('#map').gmap3({get: $("#markerId .value").text() });
+          marker.setIcon(marker.getIcon() ? "" : "http://maps.google.com/mapfiles/marker_green.png");
+        });
+        
+        $("#bremove").click(function(){
+          $('#map').gmap3({clear: $("#markerId .value").text() });
+          $("#data").hide();
+          $("#title").show();
+        });
+        
+      });
+      
+      function markerSelected(id){
+        var marker = $('#map').gmap3({get:id});
+        
+        $("#markerId .value").val(id);
+        $("#latitude .value").val(marker.getPosition().lat());
+        $("#longitude .value").val(marker.getPosition().lng());
+        
+        $("#data").show();
+        //$("#title").hide();
+      }
+      
+    </script>
+  <body>
+    <div id="container">      
+      <div id="tool">
+        <form>
+        <div id="title"><h2>Selecciona un punto de control</h2></div>
+          <div id="data">
+            <div id="descripcion" class='section'>
+              <label>Descripción: </label>
+              <input type='text'class='value'>            
+            </div>
+            <div id="alias" class='section'>
+              <label>Alias: </label>
+              <input type='text'class='value'>            
+            </div>
+            <div id="markerId" class='section'>
+              <label>ID: </label>
+              <input type='text'class='value'>            
+            </div>
+            <div id="latitude" class='section'>
+              <label>Latitud: </label>
+              <input type='text'class='value'>
+            </div>
+            <div id="longitude" class='section'>
+              <label>Longitud: </label>
+              <input type='text'class='value'>
+            </div>
+            <div id="radio" class='section'>
+              <label>Radio: </label>
+             <input type='text'class='value'>
+            </div>
+            <button id="guardar">Guardar</button>
+            <button id="bcolor">Agregar</button>
+            <button id="bremove">Borrar</button>
+          </div>
+        </form>  
+      </div>
+      <div id="map" class="gmap3"></div>
+    </div> 
+  </body>
+</html>

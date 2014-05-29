@@ -1,0 +1,164 @@
+<html>    
+  <head> 
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="../jquery/jquery-1.4.4.min.js"></script>        
+    <script src="http://maps.googleapis.com/maps/api/js?sensor=false" type="text/javascript"></script>
+    <script type="text/javascript" src="../gmap3.js"></script> 
+    <style>
+      body{
+        text-align:center;
+      }
+      #container{
+        overflow: auto;
+        margin: 20px auto;
+        width: 1200px;
+      }
+      .gmap3, #tool{
+        border: 1px dashed #C0C0C0;
+        width: 500px;
+        height: 500px;
+        float: left;
+      }
+      #tool{
+        margin-left: 10px;
+        padding: 5px;
+        text-align:left;
+      }
+      #data{
+        
+      }
+      .section{
+        margin: 10px;
+        padding: 10px;
+      }
+    </style>
+    
+    <script type="text/javascript">
+      $(function(){
+
+        var puntosControl= <?php echo json_encode($detallado['PC'])?>;
+
+        var list[];
+
+        for(var x in puntosControl){            
+            var pcontrolNO= "pcontrolNO";
+            var pcontrolYES= "pcontrolYES";
+            var objDatosPC={};            
+            var arrLatLongPC= [puntosControl[x]['PC']['latitud'], puntosControl[x]['PC']['longitud']];
+            var horaPC= puntosControl[x]['PC']['hora'];
+            var statusPC= puntosControl[x]['PC']['status'];
+            var descripcion= puntosControl[x]['PC']['descripcion'];
+            var alias= puntosControl[x]['PC']['alias'];  
+            var radio= puntosControl[x]['PC']['radio'];             
+            //convierte a Ñ si recive el codigo u00d1  
+            var descripcion2= htmlCode(descripcion);              
+            var objData={hora:horaPC, status:statusPC, descripcion:descripcion2, alias:alias, radio:radio, latLng:arrLatLong};
+              console.log(objData);
+            var horaPC= puntosControl[x]['PC']['status'];  
+            if(statusPC!=true){              
+              objDatosPC={latLng:arrLatLongPC, tag:pcontrolNO, data:objData};
+              radioPCs(objDatosPC.latLng, objDatosPC.data.radio);
+              list.push(objDatosPC);
+            }else{
+              objDatosPC={latLng:arrLatLongPC, tag:pcontrolYES, data:objData};
+              radioPCs(objDatosPC.latLng, objDatosPC.data.radio);             
+              list.push(objDatosPC);
+            }
+        }
+
+        var arrCenter= list[0].latLng;
+
+        $('#map').gmap3({
+          map:{
+            options:{
+              center: arrCenter,
+              zoom: 12
+            }
+          },
+          marker:{
+            values: list,
+            options:{
+              draggable: false
+            },
+            events: {
+              click: function(marker, event, context){
+                markerSelected(context.id);
+              }
+            }
+          }
+        });
+        
+        $("#bcolor").click(function(){
+          var marker = $('#map').gmap3({get: $("#markerId .value").text() });
+          marker.setIcon(marker.getIcon() ? "" : "http://maps.google.com/mapfiles/marker_green.png");
+        });
+        
+        $("#bremove").click(function(){
+          $('#map').gmap3({clear: $("#markerId .value").val() });
+          $("#data").hide();
+          $("#title").show();
+        });
+        
+      });
+      
+      function markerSelected(id){
+        var marker = $('#map').gmap3({get:id});
+        
+        $("#markerId .value").val(id);
+        $("#latitude .value").val(marker.getPosition().lat());
+        $("#longitude .value").val(marker.getPosition().lng());
+        
+        $("#data").show();
+        //$("#title").hide();
+      }
+      
+    </script>
+  <body>
+    <div id="container">
+      <div id="ruta">
+        <label>Ruta: </label>
+          <select>
+            <option value="volvo">13</option>
+            <option value="saab">380</option>
+            <option value="mercedes">629</option>
+            <option value="audi">625</option>
+          </select>             
+      </div>      
+      <div id="tool">
+        <form>
+        <div id="title"><h2>Selecciona un punto de control</h2></div>
+          <div id="data">            
+            <div id="descripcion" class="section">
+              <label>Descripción: </label>
+              <input type='text'class='value'>            
+            </div>
+            <div id="alias" class="section">
+              <label>Alias: </label>
+              <input type='text'class='value'>            
+            </div>
+            <div id="markerId" class="section">
+              <label>ID: </label>
+              <input type='text'class='value'>            
+            </div>
+            <div id="latitude" class="section">
+              <label>Latitud: </label>
+              <input type='text'class='value'>
+            </div>
+            <div id="longitude" class="section">
+              <label>Longitud: </label>
+              <input type='text'class='value'>
+            </div>
+            <div id="radio" class="section">
+              <label>Radio: </label>
+             <input type='text'class='value'>
+            </div>
+            <button id="guardar">Guardar</button>
+            <button id="bcolor">Agregar</button>
+            <button id="bremove">Borrar</button>
+          </div>
+        </form>  
+      </div>
+      <div id="map" class="gmap3"></div>
+    </div> 
+  </body>
+</html>

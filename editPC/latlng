@@ -1,0 +1,125 @@
+<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCQqTp2_r5AEhKFibr0Lj2JBSiXc9orHVs&sensor=false" type="text/javascript"></script>
+<style>
+      body{
+        text-align:center;
+      }
+      .btn{
+        display: inline-block;
+        width: 80px;
+        height: 30px;
+        background-color: green;
+      }
+      #container{
+        /*overflow: auto;*/
+        margin: 20px auto;
+        width: 1500px;
+      }
+      #tool{
+        border: 1px dashed #C0C0C0;
+        width: 500px;
+        height: 600px;
+        float: left;
+        margin-left: 10px;
+        padding: 5px;
+        text-align:left;
+      }
+      .gmap3{
+        border: 1px dashed #C0C0C0;
+        width: 600px;
+        height: 600px;
+        float: left;
+      }
+      #data{
+        
+      }
+      .section{
+        margin: 10px;
+        padding: 10px;
+      }
+      #markerId{
+        display: none;
+      }
+</style>
+
+    <script type="text/javascript">
+      $(function(){
+        var position = [-33, 151]; 
+
+        $("#map").gmap3({
+          map:{
+            options:{
+              center: position,
+              zoom: 8
+            }
+          },
+          marker:{
+            latLng: position,
+            options:{
+              draggable: true,
+              icon: "http://code.google.com/intl/fr/apis/maps/documentation/javascript/examples/images/beachflag.png"
+            },
+            events:{
+              dragend: function(marker){
+                $("#latitud .value").val( marker.position.lat() );
+                $("#test8-result .value").val( marker.position.lng() );
+              }
+            }
+          }
+        });
+      }     
+      
+    </script>
+  
+    <div id="container">
+      <div id="ruta">
+        <label>Ruta: </label>
+          <select>
+            <option>13</option>
+            <option>380</option>
+            <option>629</option>
+            <option>625</option>
+          </select>             
+      </div>      
+      <div id="tool">
+        <form>
+        <div id="title"><h2>Selecciona un punto de control</h2></div>
+          <div id="data">            
+            <div id="descripcion" class="section">
+              <label>Descripción: </label>
+              <input type='text'class='value'>            
+            </div>
+            <div id="alias" class="section">
+              <label>Alias: </label>
+              <input type='text'class='value'>            
+            </div>            
+            <div id="markerId" class="section">
+              <label>ID: </label>
+              <input type='text'class='value'>            
+            </div>            
+            <div id="latitud" class="section">
+              <label>Latitud: </label>
+              <input type='text'class='value'>
+            </div>
+            <div id="longitud" class="section">
+              <label>Longitud: </label>
+              <input type='text'class='value'>
+            </div>
+            <div id="radio" class="section">
+              <label>Radio: </label>
+             <input type='number'class='value'>
+            </div>
+            <div id="guardar" class="btn">Guardar</div>
+            <div id="bcolor" class="btn">Agregar</div>
+            <div id="bremove" class="btn">Borrar</div>
+          </div>
+        </form>  
+      </div>
+      <div id="map" class="gmap3"></div>
+    </div> 
+    <!--
+    <pre>    
+    <?php //print_r($detallado)?>
+    <pre>
+    -->
+
+

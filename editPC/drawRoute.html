@@ -1,0 +1,260 @@
+<html>    
+  <head> 
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="../jquery/jquery-1.4.4.min.js"></script>        
+    <script src="http://maps.googleapis.com/maps/api/js?sensor=false" type="text/javascript"></script>
+    <script type="text/javascript" src="../gmap3.js"></script>
+    <script type="text/javascript" src="../gmap3-menu.js"></script>  
+    <script type="text/javascript" src="niceScroll.js"></script>
+    <script type="text/javascript" src="animatescroll.js"></script> 
+    <link rel="stylesheet" type="text/css" href="../gmap3-menu.css" /> 
+    <style>
+      .gmap3{
+        border: 1px dashed #C0C0C0;
+        /*width: 1200px;*/
+        /*height: 600px;*/
+        /*float: left;*/
+        position: relative;
+        padding-bottom: 40%;
+        height: 0;
+        overflow: hidden;
+      }
+      .gmap3 iframe{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100% !important;
+        height: 100% !important;
+      }
+    </style>   
+    <script type="text/javascript">
+      $(function(){
+      
+        var $map = $("#map"),
+          menu = new Gmap3Menu($map),              
+          current,  // current click event (used to save as start / end position)
+          m1,       // marker "from"
+          m2,
+          lastPoint;
+        var wayPointsArr=[];
+        var pointA=true;
+        //var waypointsMaker=false;         // marker "to"
+        
+        // update marker
+        function updateMarker(marker, isM1){
+          if (isM1){
+            m1 = marker;
+          } else {
+            m2 = marker;
+          }
+          updateDirections();
+        }
+        
+        // add marker and manage which one it is (A, B)
+        function addMarker(isM1){
+          // clear previous marker if set
+          var clear = {name:"marker"};
+          if (isM1 && m1) {
+            clear.tag = "from";
+            $map.gmap3({clear:clear});
+          } else if (!isM1 && m2){
+            clear.tag = "to";
+            $map.gmap3({clear:clear});
+          }
+          // add marker and store it
+          $map.gmap3({
+            marker:{
+              latLng:current.latLng,
+              options:{
+                draggable:true,
+                icon:new google.maps.MarkerImage("marker" + (isM1 ? "A" : "B") + ".png")
+              },
+              tag: (isM1 ? "from" : "to"),
+              events: {
+                dragend: function(marker){
+                  updateMarker(marker, isM1);
+                }
+              },
+              callback: function(marker){
+                updateMarker(marker, isM1);       
+              }
+            }
+          });
+        }
+                
+        function deleteWayPoint(){
+          if(wayPointsArr.length > 1){
+            var deletedPosition=wayPointsArr.pop();
+            var lastPosition=wayPointsArr[wayPointsArr.length-1];  
+            console.log("Latitud borrada "+lastPosition.location.k);
+            console.log("Longitud borrada "+lastPosition.location.A);
+            console.log(wayPointsArr);            
+            $("#map").gmap3({
+              get: {
+                name:"marker",
+                tag:"to",
+                callback: function(marker){
+                  marker.setPosition(new google.maps.LatLng(lastPosition.location.k,lastPosition.location.A));
+                }
+              }
+            });
+            console.log("Tamaño del array de waypoints "+wayPointsArr.length);             
+            updateDirections(true);            
+          }else{
+              if(wayPointsArr.length ==1 && m2){
+                //console.log("Tamaño del array de waypoints "+wayPointsArr.length);  
+                $("#map").gmap3({
+                  get: {
+                    name:"marker",
+                    tag:"to",
+                    callback: function(marker){
+                      marker.setPosition(new google.maps.LatLng(m1.getPosition().lat(), m1.getPosition().lng()));
+                    }
+                  }
+                });        
+                //$('#map').gmap3({clear: {name:"marker", tag:"to"}});
+                wayPointsArr.pop();
+                console.log("Tamaño del array de waypoints "+wayPointsArr.length);                        
+                updateDirections(true);                
+              }
+          }            
+            
+        }    
+        // function called to update direction is m1 and m2 are set
+        function updateDirections(waypointsMaker){
+          if (!(m1 && m2)){
+            return;
+          }          
+          //console.log("Latitud punto B:"+m2.getPosition().lat());
+          //console.log("Longitud punto B:"+m2.getPosition().lng());
+          if(!waypointsMaker){
+            wayPointsObj= {
+              location: new google.maps.LatLng(m2.getPosition().lat(),m2.getPosition().lng()),
+              stopover: true
+            };          
+            wayPointsArr.push(wayPointsObj);
+            console.log(wayPointsArr);
+            console.log("Latitud Waypoint agregado "+wayPointsArr[0].location.k);
+            console.log("Longitud Waypoint agregado "+wayPointsArr[0].location.A);
+            console.log("Tamaño del array de waypoints "+wayPointsArr.length); 
+          }
+          $map.gmap3({
+            getroute:{
+              options:{
+                origin:m1.getPosition(),
+                destination:m2.getPosition(),
+                waypoints: wayPointsArr,
+                optimizeWaypoints: true,
+                travelMode: google.maps.DirectionsTravelMode.DRIVING
+              },
+              callback: function(results){
+                if (!results) return;
+                //$map.gmap3({get:"directionsrenderer"}).setDirections(results);
+                //var jsonWaypoints=results.routes[0].legs;
+                //console.log(jsonWaypoints);
+                //draggableWaypoints(jsonWaypoints);
+                /*for(var x in jsonWaypoints){
+                    if(jsonWaypoints[x].via_waypoint[0]){
+                      console.log("Si hay waypoints");
+                      var lat= jsonWaypoints[x].via_waypoint[0].location.lat;
+                      var lng= jsonWaypoints[x].via_waypoint[0].location.lng;                      
+                      var wayPointsObj= {
+                        location: new google.maps.LatLng(lat, lng),
+                        stopover: true
+                      };          
+                      wayPointsArr.push(wayPointsObj);
+                      console.log("waypoints: "+ wayPointsArr);
+                    }
+                }*/
+                $map.gmap3({get:"directionsrenderer"}).setDirections(results);
+                
+              }
+            }
+          });
+        }
+
+        function draggableWaypoints(json){
+          console.log("Es el json con waypoints")
+          console.log(json);
+        }
+        // MENU : ITEM 1
+        menu.add("Eliminar ultimo punto", "itemB",           
+          function(){
+            menu.close();
+            deleteWayPoint();
+          });
+         // MENU : ITEM 3
+        menu.add("Zoom in", "zoomIn", 
+          function(){
+            var map = $map.gmap3("get");
+            map.setZoom(map.getZoom() + 1);
+            menu.close();
+          });
+        
+        // MENU : ITEM 4
+        menu.add("Zoom out", "zoomOut",
+          function(){
+            var map = $map.gmap3("get");
+            map.setZoom(map.getZoom() - 1);
+            menu.close();
+          });
+
+        // INITIALIZE GOOGLE MAP
+        (function initializeMap(){
+          $map.gmap3({
+            map:{
+              options:{
+                center:[20.618493070044387, -103.41760911941526],
+                zoom: 14
+              },
+              events:{
+                rightclick:function(map, event){
+                  current = event;
+                  menu.open(current);
+                },
+                click: function(map, event){
+                  //menu.close();
+                  if(pointA==true){
+                    current = event;
+                    addMarker(true);
+                    pointA=false;
+                  }else{
+                    current = event;
+                    addMarker(false);
+                  }  
+                },
+                dragstart: function(){
+                  //menu.close();                
+                },
+                zoom_changed: function(){
+                  //menu.close();
+                }
+              }
+            },
+            // add direction renderer to configure options (else, automatically created with default options)
+            //$map.gmap3({get:"directionsrenderer"}).setDirections(results);
+            directionsrenderer:{
+              //divId:"directions",
+              options:{
+                preserveViewport: true,
+                draggable: true,
+                //directions:results
+                markerOptions:{
+                  visible: false
+                }
+              }
+            }
+          });
+        })();
+      });
+    </script>
+  
+    <div id="map" class="gmap3">
+      <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d7098.94326104394!2d78.0430654485247!3d27.172909818538997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2s!4v1385710909804" width="600" height="450" frameborder="0" style="border:0"></iframe>
+    </div>
+    <div id="directions">
+      
+    </div>    
+    
+  </body>
+</html>

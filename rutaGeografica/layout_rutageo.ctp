@@ -66,8 +66,20 @@
             width: 100% !important;
             height: 100% !important;
         }
+       .labels {
+	     	color: black;
+	     	background-color: none;
+	     	font-family: "Lucida Grande", "Arial", sans-serif;
+	     	font-size: 9px;
+	     	font-weight: bold;
+	     	text-align: center;
+	     	width: 35px;     
+	     	white-space: nowrap;
+   	}
 
 	</style>
+	<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCQqTp2_r5AEhKFibr0Lj2JBSiXc9orHVs&sensor=false" type="text/javascript"></script>
+	<script src="<?php echo $this->webroot; ?>js/markerwithlabel.js" type="text/javascript"></script>
 </head>
 <body>
 	<div id="container">
@@ -105,7 +117,284 @@
 	<?php echo $this->Js->writeBuffer(); ?>
 	
 	<script type="text/javascript">
-      $(function(){
+		//var paths=[];
+	   function convertGoogleLatLng(array){	   	
+			var paths = [];
+			for (var i = 0; i < array.length; i++) {			    		    
+			    paths.push(new google.maps.LatLng(array[i][0], array[i][1]));		    
+			}
+			return paths;
+	   }  
+	   var infowindow2 = null;
+	   var pcMarkers=[];
+
+    	function setPCMarkers(map) {		  
+		   var image = {
+		   	url: 'img/puntoControl_20.png',		    
+		   	size: new google.maps.Size(20, 32),
+		   	origin: new google.maps.Point(0,0),
+		   	//anchor: new google.maps.Point(0, 32)
+		  	};		  	   		  
+  
+		  	for(x in puntoscontrol){
+		  		var position= new google.maps.LatLng(puntoscontrol[x].latitud, puntoscontrol[x].longitud);
+		  		var tipo= puntoscontrol[x].tipo;
+		  		var tipoString="";
+
+		  		if(tipo==='0'){
+		  			tipoString="Paso";
+		  		} else if(tipo==='1'){
+		  			tipoString="Llega/Sale";
+		  		}
+
+		  		var infoString = "<div style='width:200px'><strong>Descripcion: </strong>"+puntoscontrol[x].descripcion+"<br><strong>Alias: </strong>"+puntoscontrol[x].alias+"<br><strong>Id: </strong>"+puntoscontrol[x].id+"<br><strong>Tipo: </strong>"+tipoString+"<br><strong>Latitud: </strong>"+puntoscontrol[x].latitud+"<br><strong>Longitud: </strong>"+puntoscontrol[x].longitud+"</div>";
+		  		var markerPC = new google.maps.Marker({
+		      	position: position,
+		      	map: map,
+		      	icon: image,
+		      	//shape: shape,
+		      	html: infoString,
+		      	zIndex: 4		      	
+	     		});		  		
+	     		
+            google.maps.event.addListener(markerPC, "mouseover", function () {
+               //alert(this.html);
+               infowindow2.setContent(this.html);
+               infowindow2.open(map, this);
+            });
+            google.maps.event.addListener(markerPC, "mouseout", function () {
+               //alert(this.html);
+               //infowindow.setContent(this.html);
+               infowindow2.close(map, this);
+            });
+
+            pcMarkers.push(markerPC);	     		 
+		  	}
+		}
+		//Todos los camiones se guardan aqui
+		var busMarkers=[];
+		var infowindow = null;
+		//var markerBus = null;
+
+		function deleteBusMarkers() {
+  			clearBusMarkers();
+  			markers = [];
+		}
+
+		function clearBusMarkers() {
+  			for (var i = 0; i < busMarkers.length; i++) {
+    			busMarkers[i].setMap(null);
+  			}
+		}
+
+		function setBusMarkers(map, dataBus) {
+			deleteBusMarkers();
+		   console.log("Valor objeto dataBuses");
+		   console.log(dataBus);
+		   
+		   var image = {
+		   	url: 'img/green_marker_bus_20.png',		    
+		   	size: new google.maps.Size(20, 32),
+		   	origin: new google.maps.Point(0,0),
+		   	//anchor: new google.maps.Point(0, 32)
+		  	};		  	
+
+		  	for(x in dataBus){
+		  		var position= new google.maps.LatLng(dataBus[x].Coordenadas[0], dataBus[x].Coordenadas[1]);
+		  		var infoString = "<div style='width:180px'><strong>Vehículo: </strong>"+dataBus[x].Nombre+"<br>"+"<strong>Fecha: </strong>"+dataBus[x].Fecha+"<br>"+"<strong>Velocidad: </strong>"+dataBus[x].Velocidad+" Km/h</div>";
+		  		var markerBus = new MarkerWithLabel({
+		      	position: position,
+		      	map: map,
+		      	icon: image,
+		      	//shape: shape,
+		      	zIndex: 3,
+		      	html: infoString,
+		      	labelContent: dataBus[x].Nombre,
+       			labelAnchor: new google.maps.Point(18, 26),
+       			labelClass: "labels", // the CSS class for the label
+       			labelInBackground: false		      	
+	     		});
+	     		
+            google.maps.event.addListener(markerBus, "mouseover", function () {
+               //alert(this.html);
+               infowindow.setContent(this.html);
+               infowindow.open(map, this);
+            });
+            google.maps.event.addListener(markerBus, "mouseout", function () {
+               //alert(this.html);
+               //infowindow.setContent(this.html);
+               infowindow.close(map, this);
+            });
+	     			     		
+	     		busMarkers.push(markerBus);
+		  	}
+		  	dataBuses=[];
+		}
+		
+		
+		function initialize() {
+			if(nodos[0]){
+				console.log("nodos existe");
+				//convertGoogleLatLng(nodos);
+				//console.log(paths);
+			}else{
+				console.log("nodos NO existe");
+			}
+		   var mapOptions = {
+		   	zoom: 13,
+		   	center: new google.maps.LatLng(20.79355167000000, -103.4915917000000),
+		   	mapTypeId: google.maps.MapTypeId.ROADMAP
+		   };
+
+		  	var map = new google.maps.Map(document.getElementById('map'),
+		      mapOptions);
+
+		  	setPCMarkers(map);
+		  	infowindow2 = new google.maps.InfoWindow({
+                content: "loading..."
+         });
+		  	
+		  	var nodosLatLng = convertGoogleLatLng(nodos);
+		  	var ruta = new google.maps.Polyline({
+		   	path: nodosLatLng,
+		   	geodesic: true,
+		   	strokeColor: '#EB575C',
+		   	strokeOpacity: 0.7,
+		   	strokeWeight: 5
+		   });
+
+		  	ruta.setMap(map);
+
+		  	!function requestPosiciones(){
+		  		var dataBus= window.getPosiciones();
+		  		setBusMarkers(map, dataBus);
+		  		infowindow = new google.maps.InfoWindow({
+                content: "loading..."
+            });
+		  		setTimeout(requestPosiciones, 10000);
+         }();
+
+		}
+
+		google.maps.event.addDomListener(window, 'load', initialize);
+
+		$(function(){
+			var getDB= "";
+         var getRuta= "";
+         var getDominio="";
+         window.nodos=[];
+         window.puntoscontrol=[];
+         window.positionPC=[];
+         window.dataBuses=[]; 
+          
+
+
+         $( "#RutageoRutas" ).change(function(){				
+				window.ruta =$('#RutageoRutas').val();
+			});
+
+         $.getJSON( "http://10.0.0.126/Analizador/WSRutaGeografica.php?idRuta=6", function( data ) {
+				console.log(data);
+			   puntoscontrol= data.puntoscontrol;
+				//obtenemos el grupo (base de datos)
+				getDB=data.server[0].schemadatos;
+				getRuta=data.server[0].numruta;
+				getDominio=data.server[0].dominio;				
+				getNodos();
+				getPosiciones();				
+				//console.log(puntosControl);
+			});
+			function getNodos(){
+				$.get( "http://"+getDominio+"/busbeaXML/tramoNodosXML.aspx?ruta="+getRuta+"&db="+getDB, function( xml ) { 
+	            $(xml).find('Tramo').each(function(){
+	                //x++;
+	               var origenLat = parseFloat($(this).find('OrigenLat').text())/1000000;
+	               var origenLon = parseFloat($(this).find('OrigenLon').text())/1000000;
+	               var origenArr= [origenLat, origenLon];
+	               //console.log(x);
+	               //path.push(origenArr);
+	               nodos.push(origenArr);
+	               var destinoLat = parseFloat($(this).find('DestinoLat').text())/1000000;
+	               var destinoLon = parseFloat($(this).find('DestinoLon').text())/1000000;
+	               var destinoArr= [destinoLat, destinoLon];
+	               //path.push(destinoArr); 
+	               nodos.push(destinoArr);
+	               var tramo=[origenArr, destinoArr];               
+	               //dibujaTramo(tramo);
+	            });
+	            //setmap();
+	            console.log(nodos);	            
+	            //poly.setPath(nodos);  
+         	});
+			}
+			window.getPosiciones= function(){
+            //clearBuses();
+            var date= new Date(); 
+                                                     
+            $.get( "http://"+getDominio+"/busbeaXML/PosicionesRutaXML.aspx?ruta="+getRuta+"&db="+getDB+"&fecha="+date, function( xml ) { 
+                
+               $(xml).find('Posicion').each(function(index, value){            
+                  
+	               var usuarioId = $(this).find('UsuarioId').text();
+	               var lat = parseFloat($(this).find('Latitud').text())/1000000;
+	               var lon = parseFloat($(this).find('Longitud').text())/1000000;
+	               var velocidad = $(this).find('Velocidad').text();
+	               var nombre = $(this).find('Nombre').text();
+	               var imei = $(this).find('IMEI').text();
+	               var fecha = $(this).find('Fecha').text();
+	               var tipo = $(this).find('Tipo').text();
+	               var direccion = $(this).find('Direccion').text();
+	               var coordenadas= [lat, lon];
+	               var data={Nombre:nombre, Fecha:fecha, Velocidad:velocidad, Coordenadas: coordenadas}                   
+                  //dataBuses=[];
+                  dataBuses.push(data);            
+	               //checaPosicion();
+	               //posicionBuses(coordenadas, data);  
+               });
+               //return dataBuses;               
+            });
+				console.log(dataBuses);
+				return window.dataBuses;
+            console.log("http://www.1.monitoreatubus.com/busbeaXML/PosicionesRutaXML.aspx?ruta="+getRuta+"&db="+getDB+"&fecha="+date);        
+            console.log("Hora del request de Posiciones: "+date);            
+            
+         };
+		});
+			
+			
+         /*
+			!function requestPosiciones(){
+            //clearBuses();
+            var date= new Date();          
+            $.get( "http://www.1.monitoreatubus.com/busbeaXML/PosicionesRutaXML.aspx?ruta="+getRuta+"&db="+getDB+"&fecha="+date, function( xml ) { 
+                
+               $(xml).find('Posicion').each(function(index, value){            
+                  
+               var usuarioId = $(this).find('UsuarioId').text();
+               var lat = parseFloat($(this).find('Latitud').text())/1000000;
+               var lon = parseFloat($(this).find('Longitud').text())/1000000;
+               var velocidad = $(this).find('Velocidad').text();
+               var nombre = $(this).find('Nombre').text();
+               var imei = $(this).find('IMEI').text();
+               var fecha = $(this).find('Fecha').text();
+               var tipo = $(this).find('Tipo').text();
+               var direccion = $(this).find('Direccion').text();
+               var coordenadas= [lat, lon];
+               var data={Nombre:nombre, Fecha:fecha, Velocidad:velocidad}                    
+               //console.log(index);
+               //checaPosicion();
+               //posicionBuses(coordenadas, data);     
+
+               });
+            });
+            console.log("http://www.1.monitoreatubus.com/busbeaXML/PosicionesRutaXML.aspx?ruta="+getRuta+"&db="+getDB+"&fecha="+date);        
+            console.log("Hora del request de Posiciones: "+date);
+
+            setTimeout(requestPosiciones, 10000);
+         }();
+		});*/
+
+      /*$(function(){
          var nodos= [];
          var posiciones={};
          var x=0;
@@ -298,7 +587,7 @@
             });        
           }         
                
-        });
+        });*/
    </script>
 </body>
 </html>

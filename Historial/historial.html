@@ -1,0 +1,238 @@
+<html>    
+  <head> 
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="jquery/jquery-1.11.1.min.js"></script>        
+    <script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCQqTp2_r5AEhKFibr0Lj2JBSiXc9orHVs&sensor=false" type="text/javascript"></script>
+    <script type="text/javascript" src="gmap3.js"></script> 
+    <style>
+      
+      .gmap3{
+        border: 1px dashed #C0C0C0;
+        /*width: 1200px;*/
+        /*height: 600px;*/
+        /*float: left;*/
+        position: relative;
+        padding-bottom: 75%;
+        height: 0;
+        overflow: hidden;
+      }
+      .gmap3 iframe{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+    </style>
+    <script type="text/javascript">
+      
+    
+    $(function(){
+      var nodos= [];
+      var x=0; 
+
+      
+      //Funcion para borrar todos los markers, se ejecuta al dar click en los botones Detener y Cargar.      
+      window.clearBuses= function(){
+        $('#map').gmap3({
+          clear: {
+            name:["marker"]
+          }
+        });
+        console.log("Markers borrados");
+      };      
+
+      //Se carga el mapadesoues de que se haya leido el xml de tramos
+      !function setmap(){
+      //setTimeout(function(){
+        //console.log(path);        
+        $('#map').gmap3({
+          map:{
+            options:{
+              center:[20.727438252613982, -103.26324462890625], 
+              zoom:3,
+              maxZoom:19 
+              //mapTypeId: google.maps.MapTypeId.TERRAIN
+            }
+          }
+        });
+        
+      //},300);
+      }();
+
+      //funcion que es llamada cada vez que se lee un tramo del xml. Pinta multiples polylines para tener como resultado la ruta completa.
+      //esta funcion por el momento no se usa en esta apliacion.
+      function dibujaTramo(tramo){        
+        $('#map').gmap3({
+          polyline:{
+            options:{
+              strokeColor: "#df4a35",
+              strokeOpacity: 0.7,
+              strokeWeight: 5,
+              path:tramo
+            }
+          }
+        });        
+      }
+
+      //funcion para centrar el mapa de acuerdo a la primer coordenada del array dataAutos. Se ejecuta al dar click en el boton cargar.
+      window.centerMap=function(coordenadas){ 
+        console.log("CenterMap: "+coordenadas);
+        $('#map').gmap3({
+          map:{
+            options:{
+              center: coordenadas, 
+              zoom:13,
+              maxZoom:19 
+              //mapTypeId: google.maps.MapTypeId.TERRAIN
+            }
+          }
+        });
+      };
+      
+      var currentBus;
+      var lastBus;
+      //Funcion que es llamada cada 10segundos que se hace el request con las nuevas posiciones. Recibe las coordenadas y  datos de cada unidad.
+      window.posicionBuses=function(coordenadas, dataBusIndex, data){  
+        currentBus= dataBusIndex; 
+        lastBus=dataBusIndex;     
+        $('#map').gmap3({
+          marker:{
+            values:[
+              {latLng: coordenadas, id:"b"+dataBusIndex, data:"<div style='width:180px'><strong>Fecha: </strong>"+data.Fecha+"<br>"+"<strong>Velocidad: </strong>"+data.Velocidad+" Km/h</div>"}          
+            ],
+            options:{
+              draggable: false,
+              icon: new google.maps.MarkerImage('img/green_marker_bus_25.png', null, null, null, new google.maps.Size(25,41))
+            },
+            events:{
+              mouseover: function(marker, event, context){
+                var map = $(this).gmap3("get"),
+                  infowindow = $(this).gmap3({get:{name:"infowindow"}});
+                if (infowindow){
+                  infowindow.open(map, marker);
+                  infowindow.setContent(context.data);
+                } else {
+                  $(this).gmap3({
+                    infowindow:{
+                      anchor:marker, 
+                      options:{content: context.data}
+                    }
+                  });
+                }
+                marker.setZIndex(999);
+              },
+              mouseout: function(marker, event, context){
+                var infowindow = $(this).gmap3({get:{name:"infowindow"}});
+                if (infowindow){
+                  infowindow.close();
+                }
+                marker.setZIndex(1);
+              }
+            }
+          },
+          overlay:{
+            latLng: coordenadas,
+            options:{
+              /*content:  '<div style="color:#000000;' +
+                        'width:40px; line-height:20px; ' +
+                        'height: 20px; text-align:center"><strong>'+data.Nombre+'</strong></div>',*/
+              offset:{
+                y:-40,
+                x:-20
+              }
+            }
+          },
+          map:{
+            options:{
+              center: coordenadas, 
+              //zoom:13,
+              maxZoom:19 
+              //mapTypeId: google.maps.MapTypeId.TERRAIN
+            }
+          }
+        });
+
+        changeIcon(dataBusIndex);
+      };
+
+      //Metodo que cambia el marker anterior a rojo
+      function changeIcon(dataBusIndex){
+        var idBus=dataBusIndex;
+        if(idBus>0){
+          var prevIdBus= idBus-1;
+          var tagBus= "b"+prevIdBus;
+          var marker = $("#map").gmap3({
+            get: {
+              id: tagBus
+            }
+          });             
+          marker.setIcon("img/red_marker_bus_25.png");
+          //console.log(prevIdBus);
+        }
+      }
+
+      var clicksFwd=0;
+      var clicksBack=0;
+
+      //Método para cambiar el color del marker hacia adelante o atrás. Funcion llamada los botones de navegación.
+      window.navegacion= function (sentido, numBuses){ 
+          //Forward...navegar hacia adelante
+          if(sentido){                      
+            if(currentBus<numBuses-1 && currentBus>=0){//Condicional para ir hacia adelante en la navegacion
+              currentBus=currentBus+1;
+              var idBus= "b"+currentBus;
+              var currentMarker = $("#map").gmap3({
+                get: {
+                  id: idBus
+                }
+              });
+              var prev = currentBus-1;
+              var idBus2= "b"+prev;
+              var prevMarker = $("#map").gmap3({
+                get: {
+                  id: idBus2
+                }
+              });              
+              currentMarker.setIcon("img/green_marker_bus_25.png");
+              currentMarker.setZIndex(999);
+              prevMarker.setIcon("img/red_marker_bus_25.png");
+              prevMarker.setZIndex(1);
+            }            
+          }
+          //Backwards...navegar hacia atrás
+          else{
+            if(currentBus<numBuses && currentBus>0){//Condicional para ir hacia atras en la navegacion
+              currentBus=currentBus-1;
+              var idBus= "b"+currentBus;
+              var currentMarker = $("#map").gmap3({//buscamos el marker actual para cambiar el icon
+                get: {
+                  id: idBus
+                }
+              });
+              var prev = currentBus+1;
+              var idBus2= "b"+prev;
+              var prevMarker = $("#map").gmap3({//buscamos el marker anterior para cambiar el icon
+                get: {
+                  id: idBus2
+                }
+              });              
+              currentMarker.setIcon("img/green_marker_bus_25.png");//Cambiamos a color verde el marker actual
+              currentMarker.setZIndex(999); //Cambiamos a un zindex mayor para que se vea sobreponga sobre cualquier otro 
+              prevMarker.setIcon("img/red_marker_bus_25.png");//Cambiamos a color rojo el marker anterior
+              prevMarker.setZIndex(1); //Cambiamos a un zindex menor
+            }            
+          }    
+      };                
+           
+    });
+    </script>
+  </head>
+    
+  <body>    
+    <div id="map" class="gmap3">
+      <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d7098.94326104394!2d78.0430654485247!3d27.172909818538997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2s!4v1385710909804" width="600" height="650" frameborder="0" style="border:0"></iframe>
+    </div>
+  </body>
+</html>
